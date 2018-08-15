@@ -21,7 +21,13 @@ function getCode($url) {
     return $status;
 }
 
-// Convert RSS(Atom) to JSON
+// Sanitize Data
+function sanitize($var) {
+    $data = htmlspecialchars(html_entity_decode($var, ENT_QUOTES, 'UTF-8'),ENT_QUOTES, 'UTF-8');
+    return $data;
+}
+
+// Run feed parse
 $context  = stream_context_create(array('http' => array('header' => 'Accept: application/xml')));
 $feed_src = 'https://news.google.com/news/rss/search/section/q/us+elections?ned=us&gl=US&hl=en';
 
@@ -29,25 +35,16 @@ $news = simplexml_load_file($feed_src);
 $feeds = array();
 $i = 0;
 
-
-function santaize($var) {
-
-    $data = htmlspecialchars(html_entity_decode($var, ENT_QUOTES, 'UTF-8'),ENT_QUOTES, 'UTF-8');
-
-    return $data;
-}
-
-
 foreach ($news->channel->item as $item) 
 {
     $result = getCode((string) $item->title);
     if ($result == 'yes') {
 
-        $title = santaize((string) $item->title);
-        $link = santaize((string) $item->link);
-        $date = santaize((string) $item->pubDate);
+        $title = sanitize((string) $item->title);
+        $link = sanitize((string) $item->link);
+        $date = sanitize((string) $item->pubDate);
         $meta = get_meta_tags($link);
-        $description = santaize($meta['description']);
+        $description = sanitize($meta['description']);
 
         if ($description != null) {
             $feeds[$i]['title'] = $title;
@@ -62,7 +59,7 @@ foreach ($news->channel->item as $item)
 ob_flush();
 flush();
 
-
+// Output data
 echo '<rss version="2.0"><channel>';
 foreach ($feeds as $article) {
     echo '<item>';
@@ -72,9 +69,5 @@ foreach ($feeds as $article) {
     echo '</item>';
 }
 echo '</channel></rss>';
-
-// echo '<pre>';
-// print_r($feeds);
-// echo '</pre>';
 
 ?>
